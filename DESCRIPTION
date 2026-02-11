@@ -1,0 +1,10 @@
+Package: WntQuant
+Title: Form a context-insensitive and directionally clear integrated Wnt signature.
+Version: 1.0.0.0
+Authors@R: 
+    person("Dingkang", "Zhao", , "dingkang.22@intl.zju.edu.cn", role = c("aut", "cre"))
+Description: A comprehensive computational framework for the systematic identification, quality control, and consolidation of Wnt signaling pathway-associated gene sets from multiple bulk RNA-Seq datasets. WntQuant implements three core functions: (1) 'Get_Wnt_denovo_genesets' identifies differentially expressed genes associated with Wnt pathway activity using limma, t-test, or Wilcoxon test, with p-value integration across sub-datasets via Fisher, z-transform, logit, CCT, sumz, or geometric mean methods; (2) 'Wnt_purification_system' employs a novel Score2 metric to precisely refine de novo gene sets or validate external Wnt pathway annotations through quantile-based thresholding and fGSEA; (3) 'Merge_Wnt_genesets' removes gene sets with insufficient gene content and integrates biologically similar Wnt-related gene sets through Jaccard index network analysis or hierarchical clustering approaches. This toolkit enables researchers to generate high-confidence, context-specific Wnt signaling signatures for pathway activity quantification, functional genomics, and precision oncology applications.
+License: GPL-3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
