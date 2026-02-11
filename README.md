@@ -149,4 +149,4 @@ This package is licensed under the GPL-3.0 License.
 
 ## Contact
 
-For questions, bug reports, or feature requests, please contact the corresponding author(dingkang.22@intl.zju.edu.cn) or open an issue on GitHub.
+For questions, bug reports, or feature requests, please contact the package maintainer (dingkang.22@intl.zju.edu.cn) or open an issue on GitHub.
