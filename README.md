@@ -2,7 +2,7 @@
 
 ## Overview
 
-**WntQuant: Robust Quantification of Wnt/β-catenin Pathway Activity through Multi-Dataset Integration: A Context-Insensitive and Directional Approach for Precision Oncology**
+**WntQuant: Quantification of Wnt/β-catenin Pathway Activity**
 
 WntQuant is an R package that enables systematic derivation and refinement of Wnt pathway-associated gene signatures from heterogeneous transcriptomic data. The framework implements a dual-phase strategy combining cross-study differential meta-analysis with evidence-based purification to establish high-confidence directional Wnt pathway signatures.
 
