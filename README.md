@@ -52,8 +52,9 @@ library(WntQuant)
 
 ## Data format
 
-WntQuant reads data from the global environment via `get()`. For each dataset
-you need:
+WntQuant reads data from the calling environment via `get()`. Create the data
+objects in the same environment where you call the functions (for example, at
+the top level or in the same R Markdown chunk). For each dataset you need:
 
 - An expression data frame named `<Dataset>` with genes as rows and samples as
   columns.
@@ -290,8 +291,8 @@ Returns `list(joint_activation_geneset, joint_inhibition_geneset)`; when
 
 ## Notes
 
-1. Data must be in the global environment and named exactly `<Dataset>` and
-   `<Dataset>_G`.
+1. Data must be accessible in the calling environment and named exactly
+   `<Dataset>` and `<Dataset>_G`.
 2. Use at least two datasets, as in the example.
 3. `file_paths` is only used for writing result files when `export_file =
    TRUE`.

@@ -88,8 +88,8 @@ Get_Wnt_denovo_genesets=function(file_paths,
   list_G_data=list()
   print("Start loading expression data and grouping information.")
   for (q in 1:length(vector)) {
-    list_data[[q]]=get(vector[q])
-    list_G_data[[q]]=get(paste0(vector[q],"_G"))
+    list_data[[q]]=get(vector[q], envir = parent.frame())
+    list_G_data[[q]]=get(paste0(vector[q],"_G"), envir = parent.frame())
     names(list_data)[q]=paste0(vector[q])
     names(list_G_data)[q]=paste0(vector[q],"_G")
   }
