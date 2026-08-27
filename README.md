@@ -21,7 +21,8 @@ WntQuant has three steps, each implemented as one function:
 
 1. `Get_Wnt_denovo_genesets` - runs differential analysis (limma, t-test, or
    Wilcoxon test) between the H and L groups and ranks genes into activation
-   and inhibition signatures.
+   and inhibition signatures. Sub-datasets that share the same prefix before
+   `_` are meta-analyzed together.
 2. `Wnt_purification_system` - computes a "Score2" confidence metric to clean
    de novo signatures, or validates external Wnt gene sets using fGSEA.
 3. `Merge_Wnt_genesets` - drops gene sets that are too small and merges highly
@@ -73,18 +74,26 @@ the top level or in the same R Markdown chunk). For each dataset you need:
 - A `group_HL` data frame with columns `Accession`, `Group1`, `Group2`,
   `Group1_Status`, and `Group2_Status`, where each status is `"H"` or `"L"`.
 
+Dataset names that share the same prefix before `_` (for example `SimDataC_a`,
+`SimDataC_b`, `SimDataC_c`) are grouped and meta-analyzed as one study. Each
+study can use its own comparison-group labels in `group_HL`.
+
 `file_paths` is the directory where result files are written when
 `export_file = TRUE`.
 
 ## Quick start example
 
-This example creates two simulated datasets and runs the full pipeline:
+This example creates five simulated studies (eight datasets in total) and runs
+the full pipeline. `SimDataC` has three sub-datasets and `SimDataE` has two;
+both use their own comparison-group labels, while `SimDataA`, `SimDataB`, and
+`SimDataD` are single datasets.
 
 ```r
 library(WntQuant)
 set.seed(123)
 
-make_dataset <- function(n_genes = 100, n_h = 30, n_l = 30, seed = 1) {
+make_dataset <- function(n_genes = 100, n_h = 30, n_l = 30, seed = 1,
+                         group1 = "GroupA", group2 = "GroupB") {
   set.seed(seed)
   n_samples <- n_h + n_l
   samples <- c(paste0("S", seq_len(n_h)), paste0("S", n_h + seq_len(n_l)))
@@ -101,35 +110,54 @@ make_dataset <- function(n_genes = 100, n_h = 30, n_l = 30, seed = 1) {
 
   group <- data.frame(
     Tag = samples,
-    group = c(rep("GroupA", n_h), rep("GroupB", n_l)),
+    group = c(rep(group1, n_h), rep(group2, n_l)),
     stringsAsFactors = FALSE
   )
   list(expr = expr, group = group)
 }
 
-dA <- make_dataset(seed = 11)
-dB <- make_dataset(seed = 22)
+dA  <- make_dataset(seed = 11)
+dB  <- make_dataset(seed = 22)
+dCa <- make_dataset(seed = 31, group1 = "GroupC1", group2 = "GroupC2")
+dCb <- make_dataset(seed = 32, group1 = "GroupC1", group2 = "GroupC2")
+dCc <- make_dataset(seed = 33, group1 = "GroupC1", group2 = "GroupC2")
+dD  <- make_dataset(seed = 44)
+dEa <- make_dataset(seed = 51, group1 = "GroupE1", group2 = "GroupE2")
+dEb <- make_dataset(seed = 52, group1 = "GroupE1", group2 = "GroupE2")
 
-SimDataA <- dA$expr
-SimDataA_G <- dA$group
-SimDataB <- dB$expr
-SimDataB_G <- dB$group
+SimDataA   <- dA$expr;  SimDataA_G   <- dA$group
+SimDataB   <- dB$expr;  SimDataB_G   <- dB$group
+SimDataC_a <- dCa$expr; SimDataC_a_G <- dCa$group
+SimDataC_b <- dCb$expr; SimDataC_b_G <- dCb$group
+SimDataC_c <- dCc$expr; SimDataC_c_G <- dCc$group
+SimDataD   <- dD$expr;  SimDataD_G   <- dD$group
+SimDataE_a <- dEa$expr; SimDataE_a_G <- dEa$group
+SimDataE_b <- dEb$expr; SimDataE_b_G <- dEb$group
 
 group_HL <- data.frame(
-  Accession = c("SimDataA", "SimDataB"),
-  Group1 = c("GroupA", "GroupA"),
-  Group2 = c("GroupB", "GroupB"),
-  Group1_Status = c("H", "H"),
-  Group2_Status = c("L", "L"),
+  Accession = c("SimDataA", "SimDataB", "SimDataC_a", "SimDataC_b", "SimDataC_c",
+                "SimDataD", "SimDataE_a", "SimDataE_b"),
+  Group1 = c("GroupA", "GroupA", "GroupC1", "GroupC1", "GroupC1",
+             "GroupA", "GroupE1", "GroupE1"),
+  Group2 = c("GroupB", "GroupB", "GroupC2", "GroupC2", "GroupC2",
+             "GroupB", "GroupE2", "GroupE2"),
+  Group1_Status = "H",
+  Group2_Status = "L",
   stringsAsFactors = FALSE
 )
 
 out_dir <- tempdir()
 
+datasets <- c(
+  "SimDataA", "SimDataB",
+  "SimDataC_a", "SimDataC_b", "SimDataC_c",
+  "SimDataD", "SimDataE_a", "SimDataE_b"
+)
+
 # 1. De novo activation / inhibition signatures.
 denovo <- Get_Wnt_denovo_genesets(
   file_paths = out_dir,
-  expression_accession_vector = c("SimDataA", "SimDataB"),
+  expression_accession_vector = datasets,
   group_HL = group_HL,
   gene_difference_method = "limma",
   alternative = "two.sided",
@@ -140,7 +168,7 @@ denovo <- Get_Wnt_denovo_genesets(
 # 2. Purify the signatures with the Score2 metric.
 refined <- Wnt_purification_system(
   file_paths = out_dir,
-  expression_accession_vector = c("SimDataA", "SimDataB"),
+  expression_accession_vector = datasets,
   group_HL = group_HL,
   activation_geneset = denovo$activation,
   inhibition_geneset = denovo$inhibition,
@@ -176,7 +204,7 @@ signatures.
 ```r
 Get_Wnt_denovo_genesets(
   file_paths = out_dir,
-  expression_accession_vector = c("SimDataA", "SimDataB"),
+  expression_accession_vector = datasets,
   group_HL = group_HL,
   gene_difference_method = "limma",
   alternative = "two.sided",
@@ -214,7 +242,7 @@ external Wnt gene sets with fGSEA.
 ```r
 Wnt_purification_system(
   file_paths = out_dir,
-  expression_accession_vector = c("SimDataA", "SimDataB"),
+  expression_accession_vector = datasets,
   group_HL = group_HL,
   gene_difference_method = "limma",
   alternative = "two.sided",
@@ -308,7 +336,8 @@ Returns `list(joint_activation_geneset, joint_inhibition_geneset)`; when
 
 1. Data must be accessible in the calling environment and named exactly
    `<Dataset>` and `<Dataset>_G`.
-2. Use at least two datasets, as in the example.
+2. Sub-datasets sharing the same prefix (for example `SimDataC_a`,
+   `SimDataC_b`, `SimDataC_c`) are meta-analyzed together as one study.
 3. `file_paths` is only used for writing result files when `export_file =
    TRUE`.
 
