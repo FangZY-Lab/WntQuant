@@ -203,9 +203,9 @@ signatures.
 
 ```r
 Get_Wnt_denovo_genesets(
-  file_paths = out_dir,
-  expression_accession_vector = datasets,
-  group_HL = group_HL,
+  file_paths,
+  expression_accession_vector,
+  group_HL,
   gene_difference_method = "limma",
   alternative = "two.sided",
   p_combine_method = "fisher",
@@ -241,9 +241,9 @@ external Wnt gene sets with fGSEA.
 
 ```r
 Wnt_purification_system(
-  file_paths = out_dir,
-  expression_accession_vector = datasets,
-  group_HL = group_HL,
+  file_paths,
+  expression_accession_vector,
+  group_HL,
   gene_difference_method = "limma",
   alternative = "two.sided",
   p_combine_method = "fisher",
