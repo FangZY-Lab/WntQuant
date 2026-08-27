@@ -8,15 +8,15 @@ Wnt_purification_system(
   file_paths,
   expression_accession_vector,
   group_HL,
-  gene_difference_method = c("limma", "t_test", "wilcox_test"),
-  alternative = c("two.sided", "less", "greater"),
-  p_combine_method = c("fisher", "z.transform", "logit", "cct", "sumz", "geometric_mean"),
+  gene_difference_method = "limma",
+  alternative = "two.sided",
+  p_combine_method = "fisher",
   using_FC = F,
   na_ratio = 0.5,
   using_KNN = T,
-  statistics = c("arithmetic_mean", "median", "geometric_mean", "sumz"),
-  purpose = c("cleaned", "validated"),
-  threshold_type = c("quantile", "rank"),
+  statistics = "arithmetic_mean",
+  purpose = "cleaned",
+  threshold_type = "quantile",
   rank_threshold = 100,
   quantile_threshold = 0.99,
   activation_geneset = NA,
@@ -59,6 +59,14 @@ Wnt_purification_system(
 \item{min.sz}{Minimum gene set size for fGSEA analysis of Wnt pathway gene sets (default = 1).}
 
 \item{max.sz}{Maximum gene set size for fGSEA analysis of Wnt pathway gene sets (default = 10000).}
+
+\item{using_KNN}{Logical. If TRUE, impute missing expression values with KNN before computing the Score2 metric.}
+
+\item{threshold_type}{Thresholding strategy for selecting high-confidence genes: "quantile" or "rank".}
+
+\item{rank_threshold}{Number of top-ranked genes retained when \code{threshold_type = "rank"}.}
+
+\item{export_file}{Logical. If TRUE, write the cleaned gene sets to tab-delimited text files in \code{file_paths}.}
 }
 \description{
 The identified Wnt-associated gene sets undergo a precision cleaning procedure based on the Score2 metric.

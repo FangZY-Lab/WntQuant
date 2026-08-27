@@ -15,20 +15,13 @@ Merge_Wnt_genesets=function(file_paths,
                         activation_geneset,
                         inhibition_geneset,
                         delete_GN=T,
-                        delete_time=c("before","after"),
+                        delete_time="before",
                         min_GN=5,
-                        integration_method=c("Jaccard","Sorensen-Dice","Hub-Promoted","Hub-Depressed"),
-                        de_redundant_basis=c("igraph_component","agglomeration_ward.D",
-                                             "agglomeration_ward.D2","agglomeration_single",
-                                             "agglomeration_complete","agglomeration_average",
-                                             "agglomeration_mcquitty","agglomeration_median",
-                                             "agglomeration_centroid"),
+                        integration_method="Jaccard",
+                        de_redundant_basis="igraph_component",
                         similarity=0.3,
                         export_file=F
                           ){
-  setwd(file_paths)
-  library(reshape2)
-  library(igraph)
   GENE_SETS_UP=activation_geneset[,colSums(activation_geneset==""|is.na(activation_geneset)|activation_geneset==" ")<nrow(activation_geneset)]
   GENE_SETS_DN=inhibition_geneset[,colSums(inhibition_geneset==""|is.na(inhibition_geneset)|inhibition_geneset==" ")<nrow(inhibition_geneset)]
   update_GENE_SETS_UP=list()
@@ -238,13 +231,12 @@ Merge_Wnt_genesets=function(file_paths,
     names(joint_geneset)=c("joint_activation_geneset","joint_inhibition_geneset")
   }
   if(export_file==T){
-  write.table(joint_GENE_SETS_UP,file="joint_activation_geneset.txt",sep="\t",col.names=TRUE,row.names=FALSE,quote=FALSE)
-  write.table(joint_GENE_SETS_DN,file="joint_inhibition_geneset.txt",sep="\t",col.names=TRUE,row.names=FALSE,quote=FALSE)
+  write.table(joint_GENE_SETS_UP,file=file.path(file_paths,"joint_activation_geneset.txt"),sep="\t",col.names=TRUE,row.names=FALSE,quote=FALSE)
+  write.table(joint_GENE_SETS_DN,file=file.path(file_paths,"joint_inhibition_geneset.txt"),sep="\t",col.names=TRUE,row.names=FALSE,quote=FALSE)
   }
   print("This calculation is over.")
   return(joint_geneset) 
 }
-
 
 
 

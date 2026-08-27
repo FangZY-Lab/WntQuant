@@ -8,10 +8,10 @@ Get_Wnt_denovo_genesets(
   file_paths,
   expression_accession_vector,
   group_HL,
-  gene_difference_method = c("limma", "t_test", "wilcox_test"),
-  alternative = c("two.sided", "less", "greater"),
-  p_combine_method = c("fisher", "z.transform", "logit", "cct", "sumz", "geometric_mean"),
-  threshold_or_rank = c("rank", "threshold"),
+  gene_difference_method = "limma",
+  alternative = "two.sided",
+  p_combine_method = "fisher",
+  threshold_or_rank = "rank",
   top_genes = 500,
   gene_Pfilter = 0.05,
   gene_FCfilter = 1,
@@ -38,6 +38,8 @@ Get_Wnt_denovo_genesets(
 \item{gene_Pfilter}{If "threshold" is selected for threshold_or_rank, this defines the p-value cutoff for Wnt-related differential expression (default = 0.05).}
 
 \item{gene_FCfilter}{If "threshold" is selected for threshold_or_rank, this defines the log2 fold change threshold for Wnt pathway activity-associated differential expression (default = 1).}
+
+\item{export_file}{Logical. If TRUE, write the de novo gene sets to tab-delimited text files in \code{file_paths}.}
 }
 \value{
 A list of de novo gene sets representing Wnt pathway activation (up-regulated genes) and inhibition (down-regulated genes).

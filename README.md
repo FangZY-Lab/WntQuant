@@ -1,152 +1,178 @@
 # WntQuant
 
-## Overview
+Directional quantification of Wnt signaling-pathway activity from bulk RNA-seq
+data.
 
-**WntQuant: Quantification of Wnt/β-catenin Pathway Activity**
+## What is WntQuant?
 
-WntQuant is an R package that enables systematic derivation and refinement of Wnt pathway-associated gene signatures from heterogeneous transcriptomic data. The framework implements a dual-phase strategy combining cross-study differential meta-analysis with evidence-based purification to establish high-confidence directional Wnt pathway signatures.
+WntQuant derives and refines gene signatures of Wnt pathway activity from
+multiple expression datasets. Given samples split into high-Wnt (H) and
+low-Wnt (L) groups, it returns two kinds of genes:
 
-**Get_Wnt_denovo_genesets: De Novo Wnt Signature Derivation Module**  
-A comprehensive meta-analytic pipeline that identifies Wnt pathway-associated genes through:
-- **Multi-dataset differential analysis**: Implements limma, t-test, and Wilcoxon tests across independent bulk RNA-seq studies stratified by Wnt/β-catenin activity
-- **Directional evidence synthesis**: Designates up-regulated and down-regulated genes as activation and inhibition signatures respectively
-- **Flexible p-value integration**: Supports Fisher, z-transform, logit, Cauchy combination test (CCT), sumz, and geometric mean methods for cross-study evidence aggregation
-- **Adaptive gene selection**: Offers rank-based (top N genes) or threshold-based (p-value + log2FC) strategies for signature derivation
-- **Scalable architecture**: Processes multiple independent datasets with automatic grouping and result consolidation
+- **Activation genes**: higher expression in the high-Wnt group.
+- **Inhibition genes**: higher expression in the low-Wnt group.
 
-**Wnt_purification_system: Precision Signature Refinement Module**  
-A robust validation and cleaning system that enhances Wnt signature accuracy through:
-- **Score2 metric computation**: Integrates directional p-values and fold changes across studies into a quantitative confidence score
-- **Intelligent missing value handling**: Optional KNN imputation with configurable missing rate thresholds
-- **Dual-purpose functionality**: Supports both de novo signature cleaning and external Wnt gene set validation
-- **Evidence-based prioritization**: Employs quantile or rank-based thresholds to retain high-confidence Wnt-associated genes
-- **fGSEA integration**: Enables systematic evaluation of public Wnt gene sets against user-defined expression compendia
+It then removes redundant gene sets and returns compact, high-confidence
+signatures.
 
-**Merge_Wnt_genesets: Biological Redundancy Resolution Module**  
-A network-based integration tool that consolidates biologically similar Wnt signatures through:
-- **Multiple similarity metrics**: Implements Jaccard, Sørensen-Dice, Hub-Promoted, and Hub-Depressed coefficients for gene set comparison
-- **Flexible clustering strategies**: Supports graph component detection and eight agglomerative hierarchical clustering methods (ward.D, ward.D2, single, complete, average, mcquitty, median, centroid)
-- **Adaptive size filtering**: Optional removal of gene sets below minimum gene count thresholds (pre- or post-integration)
-- **Union-based consolidation**: Merges highly similar gene sets through intersection-weighted union operations
-- **Network visualization ready**: Outputs similarity matrices for downstream Jaccard network construction
+## How it works
 
-**Framework Features:**
-- De novo Wnt signature discovery from multi-study expression compendia
-- Quantitative confidence scoring (Score2) for gene-level Wnt association
-- Context-specific signature refinement across diverse biological settings
-- Comprehensive support for one-sided and two-sided testing frameworks
-- Seamless integration with downstream GSEA and fGSEA workflows
-- Reproducible outputs in standardized tabular formats
+WntQuant has three steps, each implemented as one function:
 
-WntQuant provides a systematic and statistically rigorous approach for establishing directional Wnt pathway signatures, offering improved specificity and biological interpretability compared to single-dataset or undirected enrichment methods.
+1. `Get_Wnt_denovo_genesets` - runs differential analysis (limma, t-test, or
+   Wilcoxon test) between the H and L groups and ranks genes into activation
+   and inhibition signatures.
+2. `Wnt_purification_system` - computes a "Score2" confidence metric to clean
+   de novo signatures, or validates external Wnt gene sets using fGSEA.
+3. `Merge_Wnt_genesets` - drops gene sets that are too small and merges highly
+   similar ones using Jaccard similarity.
 
 ## Installation
 
-### Prerequisites
-
-Make sure you have R (version 4.0.0 or higher) installed. The package requires several Bioconductor and CRAN dependencies.
-
-### Installation Steps
+Run the following in a fresh R session:
 
 ```r
-# Install from GitHub
-devtools::install_github("FangZY-Lab/WntQuant", force = TRUE)
+# CRAN dependencies
+install.packages("BiocManager")
+install.packages(c("doBy", "dplyr", "igraph", "magrittr", "metap", "reshape2"))
+
+# Bioconductor dependencies
+BiocManager::install(c("limma", "fgsea", "impute", "survcomp"))
+
+# WntQuant itself
+install.packages("remotes")
+remotes::install_github("FangZY-Lab/WntQuant")
 ```
 
-## Quick Start
-
-### De Novo Wnt Signature Discovery
+Then load it:
 
 ```r
-# Identify Wnt activation and inhibition signatures from multiple datasets
-denovo_sigs <- Get_Wnt_denovo_genesets(
-  file_paths = "./data",
-  expression_accession_vector = c("GSEA_breast", "GSEB_colorectal"),
-  group_HL = wnt_group_assignments,
+library(WntQuant)
+```
+
+## Data format
+
+WntQuant reads data from the global environment via `get()`. For each dataset
+you need:
+
+- An expression data frame named `<Dataset>` with genes as rows and samples as
+  columns.
+- A group data frame named `<Dataset>_G` with a `Tag` column (sample IDs
+  matching the expression column names) and a `group` column (group labels).
+- A `group_HL` data frame with columns `Accession`, `Group1`, `Group2`,
+  `Group1_Status`, and `Group2_Status`, where each status is `"H"` or `"L"`.
+
+`file_paths` is the directory where result files are written when
+`export_file = TRUE`.
+
+## Quick start example
+
+This example creates two simulated datasets and runs the full pipeline:
+
+```r
+library(WntQuant)
+set.seed(123)
+
+make_dataset <- function(n_genes = 100, n_h = 30, n_l = 30, seed = 1) {
+  set.seed(seed)
+  n_samples <- n_h + n_l
+  samples <- c(paste0("S", seq_len(n_h)), paste0("S", n_h + seq_len(n_l)))
+
+  mat <- matrix(rnorm(n_samples * n_genes), nrow = n_genes, ncol = n_samples)
+  # Activation genes: higher in the H group.
+  mat[1:10, seq_len(n_h)] <- mat[1:10, seq_len(n_h)] + 2
+  # Inhibition genes: higher in the L group.
+  mat[11:20, n_h + seq_len(n_l)] <- mat[11:20, n_h + seq_len(n_l)] + 2
+
+  expr <- as.data.frame(mat)
+  rownames(expr) <- paste0("GENE", seq_len(n_genes))
+  colnames(expr) <- samples
+
+  group <- data.frame(
+    Tag = samples,
+    group = c(rep("GroupA", n_h), rep("GroupB", n_l)),
+    stringsAsFactors = FALSE
+  )
+  list(expr = expr, group = group)
+}
+
+dA <- make_dataset(seed = 11)
+dB <- make_dataset(seed = 22)
+
+SimDataA <- dA$expr
+SimDataA_G <- dA$group
+SimDataB <- dB$expr
+SimDataB_G <- dB$group
+
+group_HL <- data.frame(
+  Accession = c("SimDataA", "SimDataB"),
+  Group1 = c("GroupA", "GroupA"),
+  Group2 = c("GroupB", "GroupB"),
+  Group1_Status = c("H", "H"),
+  Group2_Status = c("L", "L"),
+  stringsAsFactors = FALSE
+)
+
+out_dir <- tempdir()
+
+# 1. De novo activation / inhibition signatures.
+denovo <- Get_Wnt_denovo_genesets(
+  file_paths = out_dir,
+  expression_accession_vector = c("SimDataA", "SimDataB"),
+  group_HL = group_HL,
   gene_difference_method = "limma",
   alternative = "two.sided",
-  p_combine_method = "cct",
   threshold_or_rank = "rank",
-  top_genes = 500
+  top_genes = 30
 )
 
-# Access results
-wnt_activation <- denovo_sigs$activation
-wnt_inhibition <- denovo_sigs$inhibition
-```
-
-### Signature Purification and Validation
-
-```r
-# Refine derived signatures with Score2 metric
-refined_sigs <- Wnt_purification_system(
-  file_paths = "./data",
-  expression_accession_vector = c("GSEA_breast", "GSEB_colorectal"),
-  group_HL = wnt_group_assignments,
-  alternative = "two.sided",
+# 2. Purify the signatures with the Score2 metric.
+refined <- Wnt_purification_system(
+  file_paths = out_dir,
+  expression_accession_vector = c("SimDataA", "SimDataB"),
+  group_HL = group_HL,
+  activation_geneset = denovo$activation,
+  inhibition_geneset = denovo$inhibition,
   purpose = "cleaned",
   threshold_type = "quantile",
-  quantile_threshold = 0.99,
-  activation_geneset = denovo_sigs$activation,
-  inhibition_geneset = denovo_sigs$inhibition
+  quantile_threshold = 0.9
 )
 
-# Validate external Wnt gene sets
-validation_result <- Wnt_purification_system(
-  file_paths = "./data",
-  expression_accession_vector = c("GSEA_breast", "GSEB_colorectal"),
-  group_HL = wnt_group_assignments,
-  alternative = "two.sided",
-  purpose = "validated",
-  geneSets_gmt = "wnt_pathways.gmt"
-)
-```
-
-### Merge Redundant Signatures
-
-```r
-# Consolidate biologically similar gene sets
-merged_sigs <- Merge_Wnt_genesets(
-  file_paths = "./results",
-  activation_geneset = refined_sigs$update_activation_geneset,
-  inhibition_geneset = refined_sigs$update_inhibition_geneset,
+# 3. Merge redundant signatures.
+merged <- Merge_Wnt_genesets(
+  file_paths = out_dir,
+  activation_geneset = refined$update_activation_geneset,
+  inhibition_geneset = refined$update_inhibition_geneset,
   delete_GN = TRUE,
-  min_GN = 5,
-  integration_method = "Jaccard",
-  de_redundant_basis = "igraph_component",
-  similarity = 0.3
+  min_GN = 3
 )
 
-# Access merged signatures
-final_activation <- merged_sigs$joint_activation_geneset
-final_inhibition <- merged_sigs$joint_inhibition_geneset
-jaccard_network <- merged_sigs$jaccard_network_UP
+str(merged$joint_activation_geneset)
+str(merged$joint_inhibition_geneset)
 ```
 
-## Input Data Format
+If it works, the final activation signature contains the planted activation
+genes (`GENE1`-`GENE10`) and the inhibition signature contains the planted
+inhibition genes (`GENE11`-`GENE20`).
 
-### Expression Data
-- Format: Data frames or matrices with genes in rows, samples in columns
-- Row names: Gene identifiers (e.g., ENTREZID, SYMBOL)
-- Column names: Sample identifiers matching group annotation files
+## Functions
 
-### Group Annotation (`group_HL`)
-A data frame with the following columns:
-- `Accession`: Dataset identifier matching expression_accession_vector
-- `Group1`: Name of first comparison group
-- `Group2`: Name of second comparison group  
-- `Group1_Status`: Wnt activity status of Group1 ("H" or "L")
-- `Group2_Status`: Wnt activity status of Group2 ("H" or "L")
+| Function | Purpose |
+| --- | --- |
+| `Get_Wnt_denovo_genesets()` | Differential analysis plus ranking to derive activation / inhibition signatures |
+| `Wnt_purification_system()` | Score2-based cleaning or fGSEA validation |
+| `Merge_Wnt_genesets()` | Size filtering plus Jaccard-based merging |
 
-### Sample Group Files (`[Accession]_G`)
-For each dataset, a corresponding group file named `[Accession]_G` containing:
-- `Tag`: Sample identifiers matching expression data column names
-- `group`: Group assignment matching Group1/Group2 in group_HL
+## Notes
 
-## License
+1. Data must be in the global environment and named exactly `<Dataset>` and
+   `<Dataset>_G`.
+2. Use at least two datasets, as in the example.
+3. `file_paths` is only used for writing result files when `export_file =
+   TRUE`.
 
-This package is licensed under the GPL-3.0 License.
+## Author
 
-## Contact
+Dingkang Zhao (赵定康)
 
-For questions, bug reports, or feature requests, please contact the package maintainer (dingkang.22@intl.zju.edu.cn) or open an issue on GitHub.
+Email: <dingkang.25@intl.zju.edu.cn>

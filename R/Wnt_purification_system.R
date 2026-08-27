@@ -25,15 +25,15 @@
 Wnt_purification_system=function(file_paths,
                         expression_accession_vector,
                         group_HL,
-                        gene_difference_method=c("limma","t_test","wilcox_test"),
-                        alternative=c("two.sided","less","greater"),
-                        p_combine_method=c("fisher", "z.transform", "logit", "cct", "sumz","geometric_mean"),
+                        gene_difference_method="limma",
+                        alternative="two.sided",
+                        p_combine_method="fisher",
                         using_FC=F,
                         na_ratio=0.5,
                         using_KNN=T,
-                        statistics=c("arithmetic_mean","median","geometric_mean","sumz"),
-                        purpose=c("cleaned","validated"),
-                        threshold_type=c("quantile","rank"),
+                        statistics="arithmetic_mean",
+                        purpose="cleaned",
+                        threshold_type="quantile",
                         rank_threshold=100,
                         quantile_threshold=0.99,
                         activation_geneset=NA,
@@ -44,10 +44,6 @@ Wnt_purification_system=function(file_paths,
                         export_file=F
                         
 ){
-  setwd(file_paths)
-  library(doBy)
-  library(limma)
-  library(metap)
   ##########################################Limma one-sided test
   #Artmann S, Jung K, Bleckmann A, Beissbarth T. Detection of simultaneous group effects in microRNA expression and related target gene sets. PLoS One. 2012;7(6):e38365. doi: 10.1371/journal.pone.0038365. Epub 2012 Jun 19. PMID: 22723856; PMCID: PMC3378551.
   limma.one.sided = function(fit, lower = FALSE){
@@ -56,10 +52,6 @@ Wnt_purification_system=function(file_paths,
     pt(fit$t, df = df.total, lower.tail = lower)
   }
   ##########################################
-  library(impute)
-  library(survcomp)
-  library(clusterProfiler)
-  library(fgsea)
   ##########################################CTT: a p-value integration method
   #Liu Y, Xie J. Cauchy combination test: a powerful test with analytic p-value calculation under arbitrary dependency structures. J Am Stat Assoc. 2020;115(529):393-402. doi: 10.1080/01621459.2018.1554485. Epub 2019 Apr 25. PMID: 33012899; PMCID: PMC7531765.
   #Liu Y, Chen S, Li Z, Morrison AC, Boerwinkle E, Lin X. ACAT: A Fast and Powerful p Value Combination Method for Rare-Variant Analysis in Sequencing Studies. Am J Hum Genet. 2019 Mar 7;104(3):410-421. doi: 10.1016/j.ajhg.2019.01.002. PMID: 30849328; PMCID: PMC6407498.
@@ -402,7 +394,7 @@ Wnt_purification_system=function(file_paths,
       update_geneset_I=list(update_inhibition_geneset,pmatrix)
       names(update_geneset_I)=c("update_inhibition_geneset","cleaning_system")
       if(export_file==T){
-      write.table(update_inhibition_geneset,file="update_inhibition_geneset_precise.txt",sep="\t",col.names=TRUE,row.names=FALSE,quote=FALSE)
+      write.table(update_inhibition_geneset,file=file.path(file_paths,"update_inhibition_geneset_precise.txt"),sep="\t",col.names=TRUE,row.names=FALSE,quote=FALSE)
       }
       aim=update_geneset_I
     }else if(alternative=="greater"){
@@ -432,7 +424,7 @@ Wnt_purification_system=function(file_paths,
       update_geneset_A=list(update_activation_geneset,pmatrix)
       names(update_geneset_A)=c("update_activation_geneset","cleaning_system")
       if(export_file==T){
-      write.table(update_activation_geneset,file="update_activation_geneset_precise.txt",sep="\t",col.names=TRUE,row.names=FALSE,quote=FALSE)
+      write.table(update_activation_geneset,file=file.path(file_paths,"update_activation_geneset_precise.txt"),sep="\t",col.names=TRUE,row.names=FALSE,quote=FALSE)
       }
       aim=update_geneset_A
     }else if(alternative=="two.sided"){
@@ -482,8 +474,8 @@ Wnt_purification_system=function(file_paths,
       update_geneset=list(update_activation_geneset,update_inhibition_geneset,pmatrix)
       names(update_geneset)=c("update_activation_geneset","update_inhibition_geneset","cleaning_system")
       if(export_file==T){
-      write.table(update_activation_geneset,file="update_activation_geneset_precise.txt",sep="\t",col.names=TRUE,row.names=FALSE,quote=FALSE)
-      write.table(update_inhibition_geneset,file="update_inhibition_geneset_precise.txt",sep="\t",col.names=TRUE,row.names=FALSE,quote=FALSE)
+      write.table(update_activation_geneset,file=file.path(file_paths,"update_activation_geneset_precise.txt"),sep="\t",col.names=TRUE,row.names=FALSE,quote=FALSE)
+      write.table(update_inhibition_geneset,file=file.path(file_paths,"update_inhibition_geneset_precise.txt"),sep="\t",col.names=TRUE,row.names=FALSE,quote=FALSE)
       }
       aim=update_geneset
     }else{
@@ -513,4 +505,3 @@ Wnt_purification_system=function(file_paths,
 }
 
  
-

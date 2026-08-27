@@ -9,13 +9,10 @@ Merge_Wnt_genesets(
   activation_geneset,
   inhibition_geneset,
   delete_GN = T,
-  delete_time = c("before", "after"),
+  delete_time = "before",
   min_GN = 5,
-  integration_method = c("Jaccard", "Sorensen-Dice", "Hub-Promoted", "Hub-Depressed"),
-  de_redundant_basis = c("igraph_component", "agglomeration_ward.D",
-    "agglomeration_ward.D2", "agglomeration_single", "agglomeration_complete",
-    "agglomeration_average", "agglomeration_mcquitty", "agglomeration_median",
-    "agglomeration_centroid"),
+  integration_method = "Jaccard",
+  de_redundant_basis = "igraph_component",
   similarity = 0.3,
   export_file = F
 )
@@ -32,6 +29,14 @@ Merge_Wnt_genesets(
 \item{min_GN}{Gene sets with fewer genes than min_GN will be removed from the Wnt pathway collection. Default parameter is 5.}
 
 \item{similarity}{When the Jaccard index similarity between two Wnt-related gene sets exceeds this threshold, the gene sets will be integrated. Default parameter is 0.3.}
+
+\item{delete_time}{Whether to remove gene sets with few genes "before" or "after" integration.}
+
+\item{integration_method}{Similarity coefficient used for gene set comparison: "Jaccard", "Sorensen-Dice", "Hub-Promoted", or "Hub-Depressed".}
+
+\item{de_redundant_basis}{Redundancy-removal strategy: "igraph_component" or a hierarchical-clustering method such as "agglomeration_ward.D".}
+
+\item{export_file}{Logical. If TRUE, write the merged gene sets to tab-delimited text files in \code{file_paths}.}
 }
 \description{
 Removal of gene sets containing few genes after purification, and integration of biologically similar Wnt-related gene sets through construction of Jaccard index networks.
