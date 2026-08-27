@@ -155,13 +155,138 @@ If it works, the final activation signature contains the planted activation
 genes (`GENE1`-`GENE10`) and the inhibition signature contains the planted
 inhibition genes (`GENE11`-`GENE20`).
 
-## Functions
+## Function reference
 
-| Function | Purpose |
-| --- | --- |
-| `Get_Wnt_denovo_genesets()` | Differential analysis plus ranking to derive activation / inhibition signatures |
-| `Wnt_purification_system()` | Score2-based cleaning or fGSEA validation |
-| `Merge_Wnt_genesets()` | Size filtering plus Jaccard-based merging |
+### `Get_Wnt_denovo_genesets()`
+
+Differential analysis plus ranking to derive activation / inhibition
+signatures.
+
+```r
+Get_Wnt_denovo_genesets(
+  file_paths,
+  expression_accession_vector,
+  group_HL,
+  gene_difference_method = "limma",
+  alternative = "two.sided",
+  p_combine_method = "fisher",
+  threshold_or_rank = "rank",
+  top_genes = 500,
+  gene_Pfilter = 0.05,
+  gene_FCfilter = 1,
+  export_file = FALSE
+)
+```
+
+| Argument | Description | Default |
+| --- | --- | --- |
+| `file_paths` | Working directory where result files are written when `export_file = TRUE`. | required |
+| `expression_accession_vector` | Character vector of dataset names. Each must exist in the global environment as an expression data frame (genes as rows, samples as columns), with a matching `<Dataset>_G` group data frame. | required |
+| `group_HL` | Data frame that maps group labels to Wnt high/low status. Columns: `Accession`, `Group1`, `Group2`, `Group1_Status`, `Group2_Status`, where each status is `"H"` or `"L"`. | required |
+| `gene_difference_method` | Differential test used between the H and L groups: `"limma"`, `"t_test"`, or `"wilcox_test"`. | `"limma"` |
+| `alternative` | Test direction: `"two.sided"`, `"less"`, or `"greater"`. | `"two.sided"` |
+| `p_combine_method` | p-value integration across sub-datasets sharing the same prefix: `"fisher"`, `"z.transform"`, `"logit"`, `"cct"`, `"sumz"`, or `"geometric_mean"`. | `"fisher"` |
+| `threshold_or_rank` | Gene selection strategy: `"rank"` keeps the top-ranked genes by p-value, `"threshold"` uses p-value and fold-change cutoffs. | `"rank"` |
+| `top_genes` | Number of top-ranked genes retained when `threshold_or_rank = "rank"`. | `500` |
+| `gene_Pfilter` | p-value cutoff when `threshold_or_rank = "threshold"`. | `0.05` |
+| `gene_FCfilter` | log2 fold-change cutoff when `threshold_or_rank = "threshold"`. | `1` |
+| `export_file` | Logical. If `TRUE`, write the activation / inhibition tables to tab-delimited files in `file_paths`. | `FALSE` |
+
+Returns a list with `activation` and `inhibition` data frames (one column per
+dataset prefix, containing ranked gene IDs).
+
+### `Wnt_purification_system()`
+
+Computes a "Score2" confidence metric to clean de novo signatures, or validates
+external Wnt gene sets with fGSEA.
+
+```r
+Wnt_purification_system(
+  file_paths,
+  expression_accession_vector,
+  group_HL,
+  gene_difference_method = "limma",
+  alternative = "two.sided",
+  p_combine_method = "fisher",
+  using_FC = FALSE,
+  na_ratio = 0.5,
+  using_KNN = TRUE,
+  statistics = "arithmetic_mean",
+  purpose = "cleaned",
+  threshold_type = "quantile",
+  rank_threshold = 100,
+  quantile_threshold = 0.99,
+  activation_geneset = NA,
+  inhibition_geneset = NA,
+  geneSets_gmt = NA,
+  min.sz = 1,
+  max.sz = 10000,
+  export_file = FALSE
+)
+```
+
+| Argument | Description | Default |
+| --- | --- | --- |
+| `file_paths` | Working directory where result files are written when `export_file = TRUE`. | required |
+| `expression_accession_vector` | Character vector of dataset names (same requirement as above). | required |
+| `group_HL` | Group-to-H/L mapping (same format as above). | required |
+| `gene_difference_method` | Differential test: `"limma"`, `"t_test"`, or `"wilcox_test"`. | `"limma"` |
+| `alternative` | Test direction: `"two.sided"`, `"less"`, or `"greater"`. | `"two.sided"` |
+| `p_combine_method` | p-value integration method: `"fisher"`, `"z.transform"`, `"logit"`, `"cct"`, `"sumz"`, or `"geometric_mean"`. | `"fisher"` |
+| `using_FC` | Logical, used under `alternative = "two.sided"`. If `TRUE`, weight p-values with the actual log2FC; if `FALSE`, weight by `sign(log2FC)`. | `FALSE` |
+| `na_ratio` | Maximum allowed missing-value proportion per gene across samples. Genes above this are removed. | `0.5` |
+| `using_KNN` | Logical. If `TRUE`, impute missing values with KNN before computing Score2. | `TRUE` |
+| `statistics` | Score2 p-value integration: `"arithmetic_mean"`, `"median"`, `"geometric_mean"`, or `"sumz"`. | `"arithmetic_mean"` |
+| `purpose` | `"cleaned"` refines de novo gene sets; `"validated"` evaluates external gene sets with fGSEA. | `"cleaned"` |
+| `threshold_type` | Thresholding for selecting high-confidence genes: `"quantile"` or `"rank"`. | `"quantile"` |
+| `rank_threshold` | Number of top-ranked genes retained when `threshold_type = "rank"`. | `100` |
+| `quantile_threshold` | Score2 quantile cutoff (0 to 1). Under `"two.sided"`, genes above and below this quantile are kept. | `0.99` |
+| `activation_geneset` | Data frame of activation gene sets to clean (required for `purpose = "cleaned"`). | `NA` |
+| `inhibition_geneset` | Data frame of inhibition gene sets to clean (required for `purpose = "cleaned"`). | `NA` |
+| `geneSets_gmt` | External gene sets for validation; a data frame with `term` and `gene` columns (for example from `clusterProfiler::read.gmt`). Required for `purpose = "validated"`. | `NA` |
+| `min.sz` | Minimum gene set size for fGSEA. | `1` |
+| `max.sz` | Maximum gene set size for fGSEA. | `10000` |
+| `export_file` | Logical. If `TRUE`, write the cleaned tables to `file_paths`. | `FALSE` |
+
+For `purpose = "cleaned"`, returns
+`list(update_activation_geneset, update_inhibition_geneset, cleaning_system)`.
+For `purpose = "validated"`, returns `list(fGSEA_result, validated_system)`.
+
+### `Merge_Wnt_genesets()`
+
+Drops too-small gene sets and merges highly similar ones.
+
+```r
+Merge_Wnt_genesets(
+  file_paths,
+  activation_geneset,
+  inhibition_geneset,
+  delete_GN = TRUE,
+  delete_time = "before",
+  min_GN = 5,
+  integration_method = "Jaccard",
+  de_redundant_basis = "igraph_component",
+  similarity = 0.3,
+  export_file = FALSE
+)
+```
+
+| Argument | Description | Default |
+| --- | --- | --- |
+| `file_paths` | Working directory where result files are written when `export_file = TRUE`. | required |
+| `activation_geneset` | Data frame of activation gene sets to merge (columns are gene sets). | required |
+| `inhibition_geneset` | Data frame of inhibition gene sets to merge. | required |
+| `delete_GN` | Logical. If `TRUE`, remove gene sets with too few genes. | `TRUE` |
+| `delete_time` | When to filter by size: `"before"` or `"after"` integration. | `"before"` |
+| `min_GN` | Minimum number of genes in a gene set; sets below this are removed. | `5` |
+| `integration_method` | Similarity coefficient: `"Jaccard"`, `"Sorensen-Dice"`, `"Hub-Promoted"`, or `"Hub-Depressed"`. | `"Jaccard"` |
+| `de_redundant_basis` | Redundancy-removal strategy: `"igraph_component"`, or a hierarchical-clustering method such as `"agglomeration_ward.D"`, `"agglomeration_ward.D2"`, `"agglomeration_single"`, `"agglomeration_complete"`, `"agglomeration_average"`, `"agglomeration_mcquitty"`, `"agglomeration_median"`, or `"agglomeration_centroid"`. | `"igraph_component"` |
+| `similarity` | Similarity threshold above which gene sets are merged. | `0.3` |
+| `export_file` | Logical. If `TRUE`, write the merged tables to `file_paths`. | `FALSE` |
+
+Returns `list(joint_activation_geneset, joint_inhibition_geneset)`; when
+`de_redundant_basis = "igraph_component"`, it also returns
+`jaccard_network_UP` and `jaccard_network_DN`.
 
 ## Notes
 
