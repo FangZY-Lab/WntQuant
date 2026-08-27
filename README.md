@@ -29,19 +29,29 @@ WntQuant has three steps, each implemented as one function:
 
 ## Installation
 
-Run the following in a fresh R session:
+Restart R first so no packages are loaded (on Windows a loaded DLL cannot be
+replaced). Then, in a fresh R session, the easiest way to install WntQuant with
+all of its CRAN and Bioconductor dependencies is with `pak`:
 
 ```r
-# CRAN dependencies
+install.packages("pak")
+pak::pkg_install("FangZY-Lab/WntQuant")
+```
+
+`pak` automatically installs `limma`, `fgsea`, `impute`, and `survcomp` from
+Bioconductor, plus `doBy`, `dplyr`, `igraph`, `magrittr`, `metap`, and
+`reshape2` from CRAN.
+
+Alternatively, install the dependencies explicitly, then install WntQuant
+without upgrading any existing packages:
+
+```r
 install.packages("BiocManager")
+BiocManager::install(c("limma", "fgsea", "impute", "survcomp"))
 install.packages(c("doBy", "dplyr", "igraph", "magrittr", "metap", "reshape2"))
 
-# Bioconductor dependencies
-BiocManager::install(c("limma", "fgsea", "impute", "survcomp"))
-
-# WntQuant itself
 install.packages("remotes")
-remotes::install_github("FangZY-Lab/WntQuant")
+remotes::install_github("FangZY-Lab/WntQuant", upgrade = FALSE)
 ```
 
 Then load it:
