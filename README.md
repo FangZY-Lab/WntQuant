@@ -1,6 +1,6 @@
 # WntQuant
 
-Directional quantification of Wnt signaling-pathway activity from bulk RNA-seq
+Directional quantification of Wnt signaling-pathway activity from multi-perturbation datasets
 data.
 
 ## What is WntQuant?
