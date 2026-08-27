@@ -295,13 +295,13 @@ Wnt_purification_system=function(file_paths,
     }
   }
   rownames(pmatrix)=pmatrix[,1]
-  pmatrix=pmatrix[,-1]
+  pmatrix=pmatrix[,-1,drop=FALSE]
   pmatrix$na_count=rowSums(is.na(pmatrix))/ncol(pmatrix)
   pmatrix=pmatrix[pmatrix$na_count <= na_ratio,]
-  pmatrix=pmatrix[,!names(pmatrix) %in% "na_count"]
+  pmatrix=pmatrix[,!names(pmatrix) %in% "na_count",drop=FALSE]
   rownames(FCmatrix)=FCmatrix[,1]
-  FCmatrix=FCmatrix[,-1]
-  FCmatrix=FCmatrix[rownames(pmatrix),]
+  FCmatrix=FCmatrix[,-1,drop=FALSE]
+  FCmatrix=FCmatrix[rownames(pmatrix),,drop=FALSE]
   if(using_KNN){
     pmatrix=impute.knn(as.matrix(pmatrix),k=10,rowmax=1,colmax=1)
     pmatrix=pmatrix$data
@@ -317,7 +317,7 @@ Wnt_purification_system=function(file_paths,
       if(using_FC){
         FCmatrix=FCmatrix
       }else{
-        FCmatrix=lapply(FCmatrix, function(x) ifelse(x != 0, sign(x), 0))
+        FCmatrix[]=lapply(FCmatrix, function(x) ifelse(x != 0, sign(x), 0))
       }
     }else{
       FCmatrix[!is.na(FCmatrix)]=1
@@ -329,7 +329,7 @@ Wnt_purification_system=function(file_paths,
       if(using_FC){
         FCmatrix=FCmatrix
       }else{
-        FCmatrix=lapply(FCmatrix, function(x) ifelse(x != 0, sign(x), 0))
+        FCmatrix[]=lapply(FCmatrix, function(x) ifelse(x != 0, sign(x), 0))
       }
     }else{
       FCmatrix[!is.na(FCmatrix)]=1
@@ -482,7 +482,7 @@ Wnt_purification_system=function(file_paths,
       print("Please enter a correct method.(two.sided/greater/less)")
     }
   }else if(purpose=="validated"){
-    FCmatrix$FC_score=rowMeans(FCmatrix[,1:(length(colnames(FCmatrix))-1)],na.rm=T)
+    FCmatrix$FC_score=rowMeans(FCmatrix[,setdiff(colnames(FCmatrix),"FC_score"),drop=FALSE],na.rm=T)
     FCmatrix=FCmatrix[order(FCmatrix$FC_score,decreasing = T),]
     canonical_pathways=geneSets_gmt
     canonical_pathways=canonical_pathways[canonical_pathways$gene != "", ]

@@ -102,7 +102,7 @@ Merge_Wnt_genesets=function(file_paths,
     matrix_DN=na.omit(matrix_DN)
     matrix_UP0=matrix_UP[matrix_UP$value>=similarity,]
     matrix_DN0=matrix_DN[matrix_DN$value>=similarity,]
-    if (is.null(matrix_UP0)) {
+    if (nrow(matrix_UP0) == 0) {
       print("Low correlation between genesets, no need for joint genesets(UP).")
     } else {
       g=graph_from_data_frame(matrix_UP0, directed = FALSE)
@@ -122,7 +122,7 @@ Merge_Wnt_genesets=function(file_paths,
         names(update_GENE_SETS_UP)[length(update_GENE_SETS_UP)]=paste0("Integration_",num_cluster[z],"_UP")
       }
     }
-    if (is.null(matrix_DN0)) {
+    if (nrow(matrix_DN0) == 0) {
       print("Low correlation between genesets, no need for joint genesets(DN).")
     } else {
       g=graph_from_data_frame(matrix_DN0, directed = FALSE)
@@ -237,7 +237,6 @@ Merge_Wnt_genesets=function(file_paths,
   print("This calculation is over.")
   return(joint_geneset) 
 }
-
 
 
 
