@@ -226,6 +226,11 @@ Wnt_purification_system(
 )
 ```
 
+> Note: `activation_geneset = NA` and `inhibition_geneset = NA` are only the
+> function defaults. For `purpose = "cleaned"`, you must pass the data frames
+> returned by `Get_Wnt_denovo_genesets()` (that is, `denovo$activation` and
+> `denovo$inhibition`), as shown in the Quick start example.
+
 | Argument | Description | Default |
 | --- | --- | --- |
 | `file_paths` | Working directory where result files are written when `export_file = TRUE`. | required |

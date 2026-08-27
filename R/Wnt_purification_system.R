@@ -367,6 +367,9 @@ Wnt_purification_system=function(file_paths,
   }
   pmatrix=pmatrix[order(pmatrix$p_score,decreasing = T),]
   if (purpose=="cleaned"){
+    if(!is.data.frame(activation_geneset) || !is.data.frame(inhibition_geneset)){
+      stop("For purpose = \"cleaned\", 'activation_geneset' and 'inhibition_geneset' must be data frames. Use the $activation and $inhibition elements returned by Get_Wnt_denovo_genesets().")
+    }
     if(alternative=="less"){
       if(threshold_type=="quantile"){
         pmatrix_DN=pmatrix[pmatrix$p_score >= quantile(pmatrix$p_score, quantile_threshold),]
