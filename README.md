@@ -260,8 +260,8 @@ dataset prefix, containing ranked gene IDs).
 
 ### `Wnt_purification_system()`
 
-Evidence-graded refinement of Wnt signatures using the Score2 confidence
-metric, or fGSEA-based validation of external Wnt gene sets.
+Evidence-graded refinement of Wnt signatures using the Directional Evidence
+Score (DES), or fGSEA-based validation of external Wnt gene sets.
 
 ```r
 Wnt_purification_system(
