@@ -1,7 +1,29 @@
 # WntQuant
 
-Directional quantification of Wnt signaling-pathway activity from multi-perturbation datasets
-data.
+A directional, evidence-graded framework for deriving, purifying, and
+consolidating Wnt pathway gene signatures from multi-cohort transcriptomes.
+
+## Highlights
+
+- **Direction-resolved quantification.** WntQuant separates activation genes
+  (up-regulated with pathway activity) from inhibition genes (down-regulated),
+  producing a context-insensitive yet directionally clear signature rather than
+  an undirected gene list.
+- **Cross-study differential meta-analysis.** limma, t-test, and Wilcoxon
+  frameworks are unified with six p-value integration schemes (Fisher,
+  z-transform, logit, Cauchy combination test, sumz, and geometric mean) to
+  synthesize evidence across sub-datasets.
+- **Score2 confidence metric.** A novel, quantitative confidence score fuses
+  directional p-values and fold changes, with KNN imputation and
+  quantile/rank-based thresholding, to retain only high-confidence Wnt
+  associations.
+- **Dual discovery and validation.** The same pipeline both de novo-derives
+  signatures and validates external Wnt gene sets through fGSEA, connecting
+  data-driven and hypothesis-driven analyses.
+- **Redundancy-aware consolidation.** Jaccard, Sørensen-Dice, and hub-based
+  similarity coefficients, combined with graph-component detection or
+  hierarchical clustering, resolve biological redundancy and return compact,
+  interpretable signatures.
 
 ## What is WntQuant?
 
@@ -12,8 +34,10 @@ low-Wnt (L) groups, it returns two kinds of genes:
 - **Activation genes**: higher expression in the high-Wnt group.
 - **Inhibition genes**: higher expression in the low-Wnt group.
 
-It then removes redundant gene sets and returns compact, high-confidence
-signatures.
+Unlike conventional single-dataset or undirected approaches, WntQuant
+explicitly resolves the direction of each association and removes redundant
+gene sets, yielding compact, high-confidence signatures ready for downstream
+functional and clinical studies.
 
 ## How it works
 
@@ -154,7 +178,7 @@ datasets <- c(
   "SimDataD", "SimDataE_a", "SimDataE_b"
 )
 
-# 1. De novo activation / inhibition signatures.
+# 1. Derive direction-resolved de novo signatures.
 denovo <- Get_Wnt_denovo_genesets(
   file_paths = out_dir,
   expression_accession_vector = datasets,
@@ -165,7 +189,7 @@ denovo <- Get_Wnt_denovo_genesets(
   top_genes = 30
 )
 
-# 2. Purify the signatures with the Score2 metric.
+# 2. Refine the signatures with the Score2 confidence metric.
 refined <- Wnt_purification_system(
   file_paths = out_dir,
   expression_accession_vector = datasets,
@@ -177,7 +201,7 @@ refined <- Wnt_purification_system(
   quantile_threshold = 0.9
 )
 
-# 3. Merge redundant signatures.
+# 3. Consolidate biologically redundant signatures.
 merged <- Merge_Wnt_genesets(
   file_paths = out_dir,
   activation_geneset = refined$update_activation_geneset,
@@ -198,8 +222,8 @@ inhibition genes (`GENE11`-`GENE20`).
 
 ### `Get_Wnt_denovo_genesets()`
 
-Differential analysis plus ranking to derive activation / inhibition
-signatures.
+De novo derivation of direction-resolved Wnt activation and inhibition
+signatures through cross-study differential meta-analysis.
 
 ```r
 Get_Wnt_denovo_genesets(
@@ -236,8 +260,8 @@ dataset prefix, containing ranked gene IDs).
 
 ### `Wnt_purification_system()`
 
-Computes a "Score2" confidence metric to clean de novo signatures, or validates
-external Wnt gene sets with fGSEA.
+Evidence-graded refinement of Wnt signatures using the Score2 confidence
+metric, or fGSEA-based validation of external Wnt gene sets.
 
 ```r
 Wnt_purification_system(
@@ -298,7 +322,8 @@ For `purpose = "validated"`, returns `list(fGSEA_result, validated_system)`.
 
 ### `Merge_Wnt_genesets()`
 
-Drops too-small gene sets and merges highly similar ones.
+Network-based consolidation that removes low-content and biologically
+redundant Wnt signatures.
 
 ```r
 Merge_Wnt_genesets(
