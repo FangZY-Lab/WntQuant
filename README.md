@@ -13,7 +13,7 @@ consolidating Wnt pathway gene signatures from multi-cohort transcriptomes.
   frameworks are unified with six p-value integration schemes (Fisher,
   z-transform, logit, Cauchy combination test, sumz, and geometric mean) to
   synthesize evidence across sub-datasets.
-- **Score2 confidence metric.** A novel, quantitative confidence score fuses
+- **Directional Evidence Score (DES).** A novel, quantitative confidence score fuses
   directional p-values and fold changes, with KNN imputation and
   quantile/rank-based thresholding, to retain only high-confidence Wnt
   associations.
@@ -47,7 +47,7 @@ WntQuant has three steps, each implemented as one function:
    Wilcoxon test) between the H and L groups and ranks genes into activation
    and inhibition signatures. Sub-datasets that share the same prefix before
    `_` are meta-analyzed together.
-2. `Wnt_purification_system` - computes a "Score2" confidence metric to clean
+2. `Wnt_purification_system` - computes the Directional Evidence Score (DES) to clean
    de novo signatures, or validates external Wnt gene sets using fGSEA.
 3. `Merge_Wnt_genesets` - drops gene sets that are too small and merges highly
    similar ones using Jaccard similarity.
@@ -189,7 +189,7 @@ denovo <- Get_Wnt_denovo_genesets(
   top_genes = 30
 )
 
-# 2. Refine the signatures with the Score2 confidence metric.
+# 2. Refine the signatures with the Directional Evidence Score (DES).
 refined <- Wnt_purification_system(
   file_paths = out_dir,
   expression_accession_vector = datasets,
@@ -303,12 +303,12 @@ Wnt_purification_system(
 | `p_combine_method` | p-value integration method: `"fisher"`, `"z.transform"`, `"logit"`, `"cct"`, `"sumz"`, or `"geometric_mean"`. | `"fisher"` |
 | `using_FC` | Logical, used under `alternative = "two.sided"`. If `TRUE`, weight p-values with the actual log2FC; if `FALSE`, weight by `sign(log2FC)`. | `FALSE` |
 | `na_ratio` | Maximum allowed missing-value proportion per gene across samples. Genes above this are removed. | `0.5` |
-| `using_KNN` | Logical. If `TRUE`, impute missing values with KNN before computing Score2. | `TRUE` |
-| `statistics` | Score2 p-value integration: `"arithmetic_mean"`, `"median"`, `"geometric_mean"`, or `"sumz"`. | `"arithmetic_mean"` |
+| `using_KNN` | Logical. If `TRUE`, impute missing values with KNN before computing the DES. | `TRUE` |
+| `statistics` | DES p-value integration: `"arithmetic_mean"`, `"median"`, `"geometric_mean"`, or `"sumz"`. | `"arithmetic_mean"` |
 | `purpose` | `"cleaned"` refines de novo gene sets; `"validated"` evaluates external gene sets with fGSEA. | `"cleaned"` |
 | `threshold_type` | Thresholding for selecting high-confidence genes: `"quantile"` or `"rank"`. | `"quantile"` |
 | `rank_threshold` | Number of top-ranked genes retained when `threshold_type = "rank"`. | `100` |
-| `quantile_threshold` | Score2 quantile cutoff (0 to 1). Under `"two.sided"`, genes above and below this quantile are kept. | `0.99` |
+| `quantile_threshold` | DES quantile cutoff (0 to 1). Under `"two.sided"`, genes above and below this quantile are kept. | `0.99` |
 | `activation_geneset` | Data frame of activation gene sets to clean (required for `purpose = "cleaned"`). | `NA` |
 | `inhibition_geneset` | Data frame of inhibition gene sets to clean (required for `purpose = "cleaned"`). | `NA` |
 | `geneSets_gmt` | External gene sets for validation; a data frame with `term` and `gene` columns (for example from `clusterProfiler::read.gmt`). Required for `purpose = "validated"`. | `NA` |
