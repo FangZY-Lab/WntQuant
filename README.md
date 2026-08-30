@@ -52,6 +52,210 @@ WntQuant has three steps, each implemented as one function:
 3. `Merge_Wnt_genesets` - drops gene sets that are too small and merges highly
    similar ones using Jaccard similarity.
 
+## Pipeline overview
+
+```mermaid
+flowchart TB
+
+    %% ================= INPUT =================
+    subgraph INPUT["Input"]
+        EXP["Expression matrices<br/>(genes x samples)"]
+        GRP["Group files<br/>(Tag, group)"]
+        GHL["group_HL<br/>(H / L mapping)"]
+        PRIOR["Prior gene sets"]
+        GMT["External gene sets<br/>(GMT, optional)"]
+    end
+
+    %% ================= MODULE 1 =================
+    subgraph M1["Module 1: Get_Wnt_denovo_genesets"]
+        direction TB
+        L1["Load data via get()"]
+        G1["Group sub-datasets<br/>by prefix"]
+        DE["Differential analysis"]
+        DE1["limma"]
+        DE2["t_test"]
+        DE3["wilcox_test"]
+        STAT["Per-gene logFC<br/>and P-value"]
+        META{"Multiple<br/>sub-datasets?"}
+        PCOMB["P-value integration"]
+        P1["fisher"]
+        P2["z.transform"]
+        P3["logit"]
+        P4["cct"]
+        P5["sumz"]
+        P6["geometric_mean"]
+        SCR["Gene screening"]
+        S1["rank: top_genes"]
+        S2["threshold:<br/>gene_Pfilter<br/>+ gene_FCfilter"]
+        DIR["Direction assignment"]
+        D1["Activation (logFC > 0)"]
+        D2["Inhibition (logFC < 0)"]
+        OUT1["De novo signatures"]
+    end
+
+    %% ================= MODULE 2 =================
+    subgraph M2["Module 2: Wnt_purification_system"]
+        direction TB
+        L2["Load data via get()"]
+        DEB["Differential analysis"]
+        MAT["P-value and<br/>fold-change matrices"]
+        NAF["NA filter (na_ratio)"]
+        KNN{"using_KNN?"}
+        KNNY["KNN imputation"]
+        KNNN["Keep as-is"]
+        DSTAT["DES statistics"]
+        E1["arithmetic_mean"]
+        E2["median"]
+        E3["geometric_mean"]
+        E4["sumz"]
+        DW["Direction weighting"]
+        W1["using_FC = TRUE<br/>(log2FC)"]
+        W2["using_FC = FALSE<br/>(sign)"]
+        DES["Directional Evidence<br/>Score (DES)"]
+        PURP{"purpose?"}
+        CLEAN["cleaned"]
+        VALID["validated"]
+        THR["Thresholding"]
+        T1["quantile"]
+        T2["rank"]
+        INTER["Intersect with<br/>input gene sets"]
+        FSEA["fGSEA<br/>(min.sz / max.sz)"]
+        OUT2A["Purified signatures"]
+        OUT2B["fGSEA result"]
+    end
+
+    %% ================= MODULE 3 =================
+    subgraph M3["Module 3: Merge_Wnt_genesets"]
+        direction TB
+        IN3["Activation and<br/>inhibition gene sets"]
+        FILT["Remove empty / NA<br/>columns"]
+        DEL{"delete_GN?"}
+        DT["delete_time:<br/>before / after"]
+        MIN["min_GN size filter"]
+        SIM["Similarity matrix"]
+        SJ["Jaccard"]
+        SSD["Sorensen-Dice"]
+        SHP["Hub-Promoted"]
+        SHD["Hub-Depressed"]
+        BASIS{"de_redundant_basis?"}
+        GRAPH["igraph_component"]
+        HC["Hierarchical clustering"]
+        H1["ward.D / ward.D2"]
+        H2["single / complete"]
+        H3["average / mcquitty"]
+        H4["median / centroid"]
+        UNION["Union merge<br/>(similarity threshold)"]
+        OUT3["Joint signatures"]
+    end
+
+    %% ================= OUTPUT =================
+    subgraph OUT["Output"]
+        FINAL["Final non-redundant<br/>Wnt signatures"]
+        NET["Jaccard network<br/>(UP / DN)"]
+    end
+
+    %% ================= EDGES: Module 1 =================
+    EXP --> L1
+    GRP --> L1
+    GHL --> L1
+    L1 --> G1 --> DE
+    DE --> DE1
+    DE --> DE2
+    DE --> DE3
+    DE1 --> STAT
+    DE2 --> STAT
+    DE3 --> STAT
+    STAT --> META
+    META -->|yes| PCOMB
+    META -->|no| SCR
+    PCOMB --> P1
+    PCOMB --> P2
+    PCOMB --> P3
+    PCOMB --> P4
+    PCOMB --> P5
+    PCOMB --> P6
+    P1 --> SCR
+    P2 --> SCR
+    P3 --> SCR
+    P4 --> SCR
+    P5 --> SCR
+    P6 --> SCR
+    PRIOR --> SCR
+    SCR --> S1
+    SCR --> S2
+    S1 --> DIR
+    S2 --> DIR
+    DIR --> D1
+    DIR --> D2
+    D1 --> OUT1
+    D2 --> OUT1
+
+    %% ================= EDGES: Module 2 =================
+    EXP --> L2
+    GRP --> L2
+    GHL --> L2
+    L2 --> DEB --> MAT --> NAF --> KNN
+    KNN -->|TRUE| KNNY
+    KNN -->|FALSE| KNNN
+    KNNY --> DSTAT
+    KNNN --> DSTAT
+    DSTAT --> E1
+    DSTAT --> E2
+    DSTAT --> E3
+    DSTAT --> E4
+    E1 --> DES
+    E2 --> DES
+    E3 --> DES
+    E4 --> DES
+    DW --> W1
+    DW --> W2
+    W1 --> DES
+    W2 --> DES
+    DES --> PURP
+    PURP -->|cleaned| CLEAN
+    PURP -->|validated| VALID
+    CLEAN --> THR
+    THR --> T1
+    THR --> T2
+    T1 --> INTER
+    T2 --> INTER
+    INTER --> OUT2A
+    VALID --> FSEA
+    GMT --> FSEA
+    FSEA --> OUT2B
+
+    %% ================= EDGES: Module 3 =================
+    OUT1 --> IN3
+    OUT2A --> IN3
+    IN3 --> FILT --> DEL
+    DEL -->|TRUE| DT
+    DEL -->|FALSE| SIM
+    DT --> MIN --> SIM
+    SIM --> SJ
+    SIM --> SSD
+    SIM --> SHP
+    SIM --> SHD
+    SJ --> BASIS
+    SSD --> BASIS
+    SHP --> BASIS
+    SHD --> BASIS
+    BASIS -->|igraph_component| GRAPH
+    BASIS -->|agglomeration| HC
+    HC --> H1
+    HC --> H2
+    HC --> H3
+    HC --> H4
+    H1 --> UNION
+    H2 --> UNION
+    H3 --> UNION
+    H4 --> UNION
+    GRAPH --> UNION
+    UNION --> OUT3
+    OUT3 --> FINAL
+    GRAPH --> NET
+    NET --> FINAL
+```
+
 ## Installation
 
 Restart R first so no packages are loaded (on Windows a loaded DLL cannot be
